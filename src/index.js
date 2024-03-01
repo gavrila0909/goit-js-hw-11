@@ -1,36 +1,94 @@
-import axios from "axios";
-axios.defaults.headers.common["x-api-key"] = "42617556-81109194e933f8c86a5f2575e";
+import axios from 'axios';
 
-
-
-const PHOTO_API_KEY = "42617556-81109194e933f8c86a5f2575e";
-
-const formEl = document.querySelector(".search-form");
-const inputEl = document.getElementById("search-input");
-const gallery = document.querySelector(".gallery");
-const loadButton = document.querySelector("load-more");
+const formEl = document.getElementById('search-form');
+const gallery = document.querySelector('.gallery');
+const loadMoreBtn = document.querySelector('.load-more');
 
 let inputData = "";
 let page = 1;
 
- async function searchImages () {
-    inputData = inputEl.value;
-    const URL = `https://pixabay.com/api/search/photos?pages=${page}&query=${inputData}&client_id=${PHOTO_API_KEY}`;
-    const response = await fetch(URL)
-    const data = await response.json();
-    const results = data.results;
+async function searchImages () {
+  try {
+    const response = await axios.get('https://pixabay.com/api/', {
+      
+      params: {
+        key: '42617556-81109194e933f8c86a5f2575e', 
+        q: inputData,
+        image_type: 'photo',
+        orientation: 'horizontal',
+        safesearch: true,
+        page: page,
+        per_page: 40,
+      },
+      
+    });
+    
+    const results = response.data.hits;
 
-    if (page === 1){
-        gallery.innerHTML = "";
+    if (page === 1) {
+      gallery.innerHTML = "";
     }
-    results.map((result) => {
-        const imageWrapper = document.createElement("div");
-        imageWrapper.classList.add("photo-card");
-        const image = document.createElement("img");
-        image.src = result.urls.small;
-        image.alt = result.alt_description;
-        
 
-    })
+    results.forEach((result) => {
+      const photoCard = document.createElement("div");
+      photoCard.classList.add("photo-card");
 
+      const image = document.createElement("img");
+      image.src = result.webformatURL; 
+      image.alt = result.tags;
+      image.loading = "lazy";
+      photoCard.append(image);
+
+
+      const infoDiv = document.createElement('div');
+      infoDiv.classList.add('info');
+
+      const likes = document.createElement('p');
+      likes.classList.add('info-item');
+      likes.innerHTML = `<b>Likes:</b> ${result.likes}`;
+      infoDiv.append(likes);
+
+      const views = document.createElement('p');
+      views.classList.add('info-item');
+      views.innerHTML = `<b>Views:</b> ${result.views}`;
+      infoDiv.append(views);
+
+      const comments = document.createElement('p');
+      comments.classList.add('info-item');
+      comments.innerHTML = `<b>Comments:</b> ${result.comments}`;
+      infoDiv.append(comments);
+
+      const downloads = document.createElement('p');
+      downloads.classList.add('info-item');
+      downloads.innerHTML = `<b>Downloads:</b> ${result.downloads}`;
+      infoDiv.append(downloads);
+    
+      photoCard.append(infoDiv);
+      gallery.append(photoCard);
+
+    });
+
+    page++;
+    if (page > 1){
+      loadMoreBtn.style.display = 'block';
+    }
+
+  } catch (error) {
+    console.error('Error fetching images:', error);
+  }
 }
+ 
+formEl.addEventListener('submit', (event) => {
+  event.preventDefault();
+  inputData = document.getElementById('search-input').value;
+  page = 1;
+  searchImages();
+})
+
+loadMoreBtn.addEventListener('click', () => {
+  searchImages()
+});
+
+
+
+

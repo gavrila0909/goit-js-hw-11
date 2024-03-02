@@ -1,18 +1,28 @@
 import axios from 'axios';
+import notiflix from 'notiflix';
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const formEl = document.getElementById('search-form');
 const gallery = document.querySelector('.gallery');
 const loadMoreBtn = document.querySelector('.load-more');
+const lightbox = new SimpleLightbox('.gallery a');
 
-let inputData = "";
+let inputData = '';
 let page = 1;
 
-async function searchImages () {
+function smoothScrollToNextGroup(cardHeight) {
+  window.scrollBy({
+    top: cardHeight * 2,
+    behavior: 'smooth',
+  });
+}
+
+async function searchImages() {
   try {
     const response = await axios.get('https://pixabay.com/api/', {
-      
       params: {
-        key: '42617556-81109194e933f8c86a5f2575e', 
+        key: '42617556-81109194e933f8c86a5f2575e',
         q: inputData,
         image_type: 'photo',
         orientation: 'horizontal',
@@ -20,25 +30,32 @@ async function searchImages () {
         page: page,
         per_page: 40,
       },
-      
     });
-    
+
     const results = response.data.hits;
 
     if (page === 1) {
-      gallery.innerHTML = "";
+      gallery.innerHTML = '';
+      notiflix.Notify.success(`Hooray! We found ${response.data.totalHits} images.`);
+    }
+
+    if (results.length === 0) {
+      notiflix.Notify.info("Sorry, there are no images matching your search query. Please try again.");
+      return;
     }
 
     results.forEach((result) => {
-      const photoCard = document.createElement("div");
-      photoCard.classList.add("photo-card");
+      const photoCard = document.createElement('div');
+      photoCard.classList.add('photo-card');
 
-      const image = document.createElement("img");
-      image.src = result.webformatURL; 
+      const link = document.createElement('a');
+      link.href = result.largeImageURL;
+
+      const image = document.createElement('img');
+      image.src = result.webformatURL;
       image.alt = result.tags;
-      image.loading = "lazy";
-      photoCard.append(image);
-
+      image.loading = 'lazy';
+      link.append(image);
 
       const infoDiv = document.createElement('div');
       infoDiv.classList.add('info');
@@ -62,33 +79,43 @@ async function searchImages () {
       downloads.classList.add('info-item');
       downloads.innerHTML = `<b>Downloads:</b> ${result.downloads}`;
       infoDiv.append(downloads);
-    
+
+      photoCard.appendChild(link);
       photoCard.append(infoDiv);
       gallery.append(photoCard);
-
     });
 
+    lightbox.refresh();
+
     page++;
-    if (page > 1){
+
+    if (response.data.totalHits <= page * 40) {
+      loadMoreBtn.style.display = 'none';
+      notiflix.Notify.info("We're sorry, but you've reached the end of search results.");
+    } else {
       loadMoreBtn.style.display = 'block';
     }
 
-  } catch (error) {
-    console.error('Error fetching images:', error);
+    const { height: cardHeight } = document
+      .querySelector('.gallery')
+      .firstElementChild.getBoundingClientRect();
+
+    smoothScrollToNextGroup(cardHeight);
+
+  } catch (err) {
+    console.error(err);
+    notiflix.Notify.failure('Oops! Something went wrong! Try reloading the page!');
   }
 }
- 
+
 formEl.addEventListener('submit', (event) => {
   event.preventDefault();
   inputData = document.getElementById('search-input').value;
   page = 1;
   searchImages();
-})
-
-loadMoreBtn.addEventListener('click', () => {
-  searchImages()
+  loadMoreBtn.style.display = 'none';
 });
 
-
-
-
+loadMoreBtn.addEventListener('click', () => {
+  searchImages();
+});

@@ -45,7 +45,7 @@
 }
 .photo-card {
     margin-bottom: 80px;
-    width: calc(25% - 20px); /* Calculează 25% din lățimea parintelui cu un spațiu între elemente de 15px */
+    width: calc(25% - 15px); 
     border-radius: 5px;
     box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
 }
